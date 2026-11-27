@@ -1,0 +1,1059 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#171b50" />
+    <meta
+      name="description"
+      content="Scan a barcode, record a price, and compare with your own shopping history. Make everyday purchases with more context using PriceTracker."
+    />
+    <script>
+      (function () {
+        try {
+          var q = new URLSearchParams(location.search),
+            a = { dark: "d", light: "l", system: "s" },
+            v = q.get("t"),
+            t = a[v] || v || localStorage.getItem("pt-theme") || "s";
+          if (!["d", "l", "s"].includes(t)) t = "s";
+          document.documentElement.dataset.theme =
+            t === "s"
+              ? matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light"
+              : t === "d"
+                ? "dark"
+                : "light";
+        } catch (e) {
+          document.documentElement.dataset.theme = matchMedia(
+            "(prefers-color-scheme: dark)",
+          ).matches
+            ? "dark"
+            : "light";
+        }
+      })();
+    </script>
+    <title>PriceTracker — A little memory. Smarter shopping.</title>
+    <style>
+      :root {
+        --navy: #171b50;
+        --blue: #30a5d7;
+        --ink: #202443;
+        --muted: #676d81;
+        --pale: #f0f6fa;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+        scroll-padding-top: 90px;
+      }
+      body {
+        margin: 0;
+        font-family:
+          Inter,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        color: var(--ink);
+        font-size: 16px;
+        line-height: 1.6;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      button {
+        font: inherit;
+      }
+      a:focus-visible,
+      button:focus-visible,
+      summary:focus-visible {
+        outline: 3px solid #30a5d7;
+        outline-offset: 6px;
+      }
+      .wrap {
+        max-width: 1200px;
+        margin: auto;
+        padding: 0 36px;
+      }
+      header {
+        border-bottom: 1px solid #edf0f5;
+        background: #fff;
+      }
+      nav {
+        height: 92px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .brand {
+        display: flex;
+        gap: 11px;
+        align-items: center;
+        font-weight: 800;
+        font-size: 22px;
+        letter-spacing: -0.7px;
+      }
+      .brand img {
+        width: 42px;
+        border-radius: 11px;
+      }
+      .brand span span {
+        font-weight: 450;
+      }
+      nav .links {
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .small-cta {
+        background: var(--navy);
+        color: white;
+        border-radius: 8px;
+        padding: 11px 20px;
+      }
+      .hero {
+        display: grid;
+        grid-template-columns: 1.1fr 1fr;
+        gap: 50px;
+        align-items: center;
+        padding-top: 75px;
+        padding-bottom: 85px;
+      }
+      .eyebrow {
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: #247fa6;
+      }
+      .hero h1 {
+        font-size: clamp(48px, 5.3vw, 72px);
+        letter-spacing: -3.5px;
+        line-height: 1.07;
+        margin: 20px 0 25px;
+        font-weight: 750;
+      }
+      .hero h1 em {
+        font-style: normal;
+        color: #258dbd;
+      }
+      .intro {
+        font-size: 19px;
+        color: var(--muted);
+        max-width: 470px;
+        line-height: 1.7;
+      }
+      .stores {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 30px;
+      }
+      .store {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--navy);
+        color: white;
+        padding: 10px 19px;
+        border-radius: 9px;
+        line-height: 1.2;
+        min-width: 168px;
+        transition: transform 0.2s;
+      }
+      .store:hover {
+        transform: translateY(-3px);
+        background: #282e70;
+      }
+      .store svg {
+        width: 26px;
+        height: 30px;
+        fill: currentColor;
+      }
+      .store small {
+        font-size: 11px;
+        display: block;
+        margin-bottom: 3px;
+      }
+      .store strong {
+        font-size: 18px;
+        font-weight: 550;
+      }
+      .note {
+        font-size: 13px;
+        color: var(--muted);
+        margin-top: 17px;
+      }
+      .visual {
+        position: relative;
+        background: #edf5fa;
+        border-radius: 30px;
+        min-height: 530px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+      .visual:before {
+        content: "";
+        position: absolute;
+        width: 420px;
+        height: 420px;
+        border: 1px solid #d2e5ee;
+        border-radius: 50%;
+      }
+      .visual:after {
+        content: "";
+        position: absolute;
+        width: 310px;
+        height: 310px;
+        border: 1px solid #d2e5ee;
+        border-radius: 50%;
+      }
+      .phone {
+        width: 235px;
+        z-index: 1;
+        transform: rotate(8deg);
+        border: 7px solid #1c2032;
+        border-radius: 35px;
+        box-shadow: 15px 25px 40px #17264e30;
+      }
+      .float {
+        position: absolute;
+        z-index: 2;
+        background: white;
+        box-shadow: 0 10px 30px #1d275015;
+        padding: 15px 19px;
+        border-radius: 13px;
+        line-height: 1.4;
+      }
+      .float.top {
+        left: 18px;
+        top: 62px;
+        transform: rotate(-5deg);
+      }
+      .float.bottom {
+        right: 14px;
+        bottom: 55px;
+        transform: rotate(-5deg);
+      }
+      .float small {
+        font-size: 12px;
+        color: var(--muted);
+        display: block;
+      }
+      .float strong {
+        font-size: 17px;
+      }
+      .float .price {
+        color: #26805c;
+        font-weight: 700;
+      }
+      .band {
+        background: var(--navy);
+        color: white;
+        padding: 27px 0;
+      }
+      .band .wrap {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 25px;
+      }
+      .band p {
+        margin: 0;
+        font-size: 19px;
+        font-weight: 500;
+      }
+      .band span {
+        color: #b9c9e6;
+        font-size: 14px;
+      }
+      .section {
+        padding-top: 100px;
+        padding-bottom: 100px;
+      }
+      h2 {
+        font-size: 43px;
+        line-height: 1.15;
+        letter-spacing: -1.8px;
+        margin: 14px 0 22px;
+      }
+      h3 {
+        font-size: 21px;
+        letter-spacing: -0.5px;
+        margin: 17px 0 10px;
+      }
+      .section-head {
+        max-width: 630px;
+      }
+      .section-head p {
+        color: var(--muted);
+        font-size: 18px;
+      }
+      .steps {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 45px;
+        margin-top: 48px;
+      }
+      .step {
+        border-top: 1px solid #dfe5ed;
+        padding-top: 28px;
+      }
+      .symbol {
+        display: grid;
+        place-items: center;
+        width: 72px;
+        height: 72px;
+        border-radius: 18px;
+        background: var(--pale);
+        color: #288eb9;
+      }
+      .symbol svg {
+        width: 42px;
+        height: 42px;
+      }
+      .step p {
+        color: var(--muted);
+        margin: 0;
+      }
+      .demo-section {
+        background: var(--pale);
+      }
+      .demo-layout {
+        display: grid;
+        grid-template-columns: 0.9fr 1fr;
+        gap: 90px;
+        align-items: center;
+      }
+      .demo-layout p {
+        color: var(--muted);
+      }
+      .history {
+        background: white;
+        padding: 30px;
+        border-radius: 18px;
+        box-shadow: 0 12px 40px #17214b08;
+      }
+      .history-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 15px;
+      }
+      .history h3 {
+        margin: 0;
+        font-size: 19px;
+      }
+      .pill {
+        font-size: 12px;
+        color: #247b58;
+        background: #e5f4ec;
+        border-radius: 30px;
+        padding: 5px 10px;
+      }
+      .history .amount {
+        font-size: 42px;
+        font-weight: 700;
+        letter-spacing: -2px;
+        margin: 20px 0 0;
+      }
+      .history .sub {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .chart {
+        width: 100%;
+        height: 150px;
+        margin: 22px 0 8px;
+      }
+      .chart-labels {
+        display: flex;
+        justify-content: space-between;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .switcher {
+        display: flex;
+        gap: 8px;
+        margin-top: 23px;
+      }
+      .switcher button {
+        background: #f1f4f7;
+        border: 0;
+        border-radius: 7px;
+        padding: 8px 15px;
+        cursor: pointer;
+        color: var(--ink);
+        font-size: 14px;
+      }
+      .switcher button[aria-pressed="true"] {
+        background: var(--navy);
+        color: white;
+      }
+      .demo-note {
+        font-size: 12px;
+        color: var(--muted);
+        margin: 17px 0 0;
+      }
+      .use-row {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+        margin-top: 35px;
+      }
+      .use-row > span {
+        border: 1px solid #dfe6ef;
+        border-radius: 30px;
+        padding: 10px 20px;
+        color: #545c73;
+      }
+      .faq {
+        max-width: 800px;
+        margin: auto;
+      }
+      .faq h2 {
+        text-align: center;
+        margin-bottom: 40px;
+      }
+      details {
+        border-bottom: 1px solid #dfe5ed;
+        padding: 20px 0;
+      }
+      summary {
+        cursor: pointer;
+        font-weight: 600;
+        list-style: none;
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+      }
+      summary:after {
+        content: "+";
+        color: #268db8;
+        font-size: 23px;
+        font-weight: 400;
+      }
+      details[open] summary:after {
+        content: "−";
+      }
+      details p {
+        color: var(--muted);
+        max-width: 680px;
+      }
+      .closing {
+        background: var(--navy);
+        color: white;
+        text-align: center;
+        border-radius: 25px;
+        padding: 65px 30px;
+        margin-bottom: 50px;
+      }
+      .closing h2 {
+        font-size: 48px;
+      }
+      .closing p {
+        color: #c1c9df;
+      }
+      .closing .stores {
+        justify-content: center;
+      }
+      .closing .store {
+        background: white;
+        color: var(--navy);
+      }
+      footer {
+        border-top: 1px solid #e7ebf2;
+        padding: 28px 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      footer .wrap {
+        display: flex;
+        justify-content: space-between;
+        gap: 25px;
+      }
+      footer a {
+        text-decoration: underline;
+        text-underline-offset: 4px;
+      }
+      @media (max-width: 850px) {
+        .hero {
+          gap: 24px;
+        }
+        .hero h1 {
+          font-size: 52px;
+        }
+        .visual {
+          min-height: 480px;
+        }
+        .float {
+          padding: 10px;
+        }
+        .float.top {
+          left: 5px;
+        }
+        .float.bottom {
+          right: 5px;
+        }
+        .demo-layout {
+          gap: 35px;
+        }
+        .phone {
+          width: 205px;
+        }
+        .steps {
+          gap: 25px;
+        }
+      }
+      @media (max-width: 650px) {
+        .wrap {
+          padding: 0 22px;
+        }
+        nav {
+          height: 77px;
+        }
+        nav .links > a:not(.small-cta) {
+          display: none;
+        }
+        nav .links {
+          gap: 0;
+        }
+        .small-cta {
+          padding: 9px 14px;
+        }
+        .brand {
+          font-size: 19px;
+        }
+        .brand img {
+          width: 35px;
+        }
+        .hero {
+          grid-template-columns: 1fr;
+          padding-top: 45px;
+          padding-bottom: 45px;
+          gap: 35px;
+        }
+        .hero h1 {
+          font-size: 54px;
+          letter-spacing: -2.6px;
+        }
+        .intro {
+          font-size: 18px;
+        }
+        .visual {
+          min-height: 470px;
+        }
+        .phone {
+          width: 220px;
+        }
+        .float.top {
+          left: 20px;
+        }
+        .float.bottom {
+          right: 15px;
+        }
+        .band .wrap {
+          display: block;
+        }
+        .band p {
+          font-size: 18px;
+        }
+        .band span {
+          display: block;
+          margin-top: 8px;
+        }
+        .section {
+          padding-top: 65px;
+          padding-bottom: 65px;
+        }
+        h2 {
+          font-size: 35px;
+        }
+        .steps,
+        .demo-layout {
+          grid-template-columns: 1fr;
+          gap: 28px;
+        }
+        .steps {
+          margin-top: 30px;
+        }
+        .step {
+          padding-top: 21px;
+        }
+        .history {
+          padding: 23px;
+        }
+        .closing {
+          border-radius: 18px;
+          padding: 45px 20px;
+        }
+        .closing h2 {
+          font-size: 36px;
+        }
+        footer .wrap {
+          flex-direction: column;
+          gap: 10px;
+        }
+        .closing-wrap {
+          padding: 0 15px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+        * {
+          transition: none !important;
+        }
+      }
+    </style>
+    <link rel="stylesheet" href="preferences.css" />
+  </head>
+  <body>
+    <header>
+      <nav class="wrap" aria-label="Main navigation">
+        <a class="brand" href="#"
+          ><img src="icon.jpg" alt="" /><span
+            >Price<span>Tracker</span></span
+          ></a
+        >
+        <div class="links">
+          <a href="#how"><span data-i18n="copy0">How it works</span></a
+          ><a href="#history"><span data-i18n="copy1">Price history</span></a
+          ><a href="#faq"><span data-i18n="copy2">FAQs</span></a
+          ><a class="small-cta" href="#download"
+            ><span data-i18n="copy3">Get the app</span></a
+          >
+        </div>
+        <div class="preferences header-preferences">
+          <label class="compact-control"
+            ><svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <ellipse cx="12" cy="12" rx="4" ry="9" />
+              <path d="M3 12h18" /></svg
+            ><span class="sr-only" data-i18n="language">Language</span
+            ><select id="locale" data-locale-select>
+              <option value="en" lang="en">English</option>
+              <option value="fr" lang="fr">Français</option>
+              <option value="tw" lang="zh-Hant">繁體中文</option>
+              <option value="ja" lang="ja">日本語</option>
+              <option value="cn" lang="zh-Hans">简体中文</option>
+            </select></label
+          ><label class="compact-control"
+            ><svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path
+                d="M12 3a9 9 0 0 1 0 18Z"
+                fill="currentColor"
+                stroke="none"
+              /></svg
+            ><span class="sr-only" data-i18n="theme">Theme</span
+            ><select id="theme" data-theme-select>
+              <option value="s" data-i18n="system">System theme</option>
+              <option value="l" data-i18n="light">Light</option>
+              <option value="d" data-i18n="dark">Dark</option>
+            </select></label
+          >
+        </div>
+      </nav>
+    </header>
+    <main>
+      <section class="hero wrap">
+        <div>
+          <div class="eyebrow">
+            <span data-i18n="copy4">Your everyday shopping companion</span>
+          </div>
+          <h1>
+            <span data-i18n="copy5"
+              >A little memory.<br /><em>Smarter shopping.</em></span
+            >
+          </h1>
+          <p class="intro">
+            <span data-i18n="copy6"
+              >Was it cheaper last time? Keep the prices you pay in your pocket,
+              so your next purchase comes with a little more perspective.</span
+            >
+          </p>
+          <div class="stores" data-stores></div>
+          <p class="note">
+            <span data-i18n="copy7"
+              >Scan a barcode. Log a price. Build your own history.</span
+            >
+          </p>
+        </div>
+        <div class="visual" aria-label="PriceTracker app preview">
+          <img
+            class="phone"
+            src="screen1.png"
+            alt="PriceTracker app showing a list of everyday products"
+          />
+          <div class="float top">
+            <small><span data-i18n="copy8">THE QUESTION WE ALL ASK</span></small
+            ><strong
+              ><span data-i18n="copy9"
+                >“Was this cheaper last time?”</span
+              ></strong
+            >
+          </div>
+          <div class="float bottom">
+            <small><span data-i18n="copy10">YOUR PRICE HISTORY</span></small
+            ><strong><span data-i18n="copy11">Less guessing.</span></strong>
+            <div class="price">
+              <span data-i18n="copy12">More perspective.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+      <div class="band">
+        <div class="wrap">
+          <p>
+            <span data-i18n="copy13"
+              >Good shopping starts with knowing what you paid.</span
+            >
+          </p>
+          <span
+            ><span data-i18n="copy14"
+              >Your products. Your stores. Your price history.</span
+            ></span
+          >
+        </div>
+      </div>
+      <section class="section wrap" id="how">
+        <div class="section-head">
+          <div class="eyebrow">
+            <span data-i18n="copy15">Simple by design</span>
+          </div>
+          <h2>
+            <span data-i18n="copy16">From “I think”<br />to “I know.”</span>
+          </h2>
+          <p>
+            <span data-i18n="copy17"
+              >Build a personal price record as you shop. A few small entries
+              today make your next decision easier.</span
+            >
+          </p>
+        </div>
+        <div class="steps">
+          <article class="step">
+            <div class="symbol" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                focusable="false"
+              >
+                <path d="M3 8V4h4m10 0h4v4M3 16v4h4m10 0h4v-4" />
+                <path d="M7 8v8m3-8v8m4-8v8m3-8v8" />
+              </svg>
+            </div>
+            <h3><span data-i18n="copy18">Scan what you buy</span></h3>
+            <p>
+              <span data-i18n="copy19"
+                >Use a product’s barcode to find it again, from your usual
+                groceries to household essentials.</span
+              >
+            </p>
+          </article>
+          <article class="step">
+            <div class="symbol" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                focusable="false"
+              >
+                <path d="M3 4h8l10 10-8 8L3 12V4Z" />
+                <circle cx="7.5" cy="8" r="1" />
+                <path d="M11 14h6m-3-3v6" />
+              </svg>
+            </div>
+            <h3><span data-i18n="copy20">Keep the price</span></h3>
+            <p>
+              <span data-i18n="copy21"
+                >Record what it costs. Add a purchase date and notes to keep the
+                details that matter.</span
+              >
+            </p>
+          </article>
+          <article class="step">
+            <div class="symbol" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                focusable="false"
+              >
+                <path
+                  d="M4 11h5v10H4zM15 15h5v6h-5zM4 5h16m-3-3 3 3-3 3M7 2 4 5l3 3"
+                />
+              </svg>
+            </div>
+            <h3><span data-i18n="copy22">Compare next time</span></h3>
+            <p>
+              <span data-i18n="copy23"
+                >Scan again and look back at previous prices before deciding
+                whether today’s offer is a good deal.</span
+              >
+            </p>
+          </article>
+        </div>
+      </section>
+      <section class="section demo-section" id="history">
+        <div class="wrap demo-layout">
+          <div>
+            <div class="eyebrow">
+              <span data-i18n="copy24">A clearer picture over time</span>
+            </div>
+            <h2>
+              <span data-i18n="copy25"
+                >Your memory.<br />With the receipts.</span
+              >
+            </h2>
+            <p>
+              <span data-i18n="copy26"
+                >Prices change. Your records help you see how. Look back at what
+                you paid, notice increases, and put a “sale” price into
+                context.</span
+              >
+            </p>
+            <p>
+              <span data-i18n="copy27"
+                >No spreadsheet to maintain. No number to remember in the
+                supermarket aisle.</span
+              >
+            </p>
+          </div>
+          <div class="history">
+            <div class="history-top">
+              <h3 id="product">Daily Greek Yogurt</h3>
+              <span class="pill"
+                ><span data-i18n="copy28">Example history</span></span
+              >
+            </div>
+            <div class="amount" id="amount">$4.50</div>
+            <div class="sub">
+              <span data-i18n="copy29"
+                >Latest recorded price · illustrative data</span
+              >
+            </div>
+            <svg
+              class="chart"
+              viewBox="0 0 400 150"
+              role="img"
+              aria-label="Illustrative price history over four shopping trips"
+            >
+              <path
+                d="M0 30H400 M0 80H400 M0 130H400"
+                stroke="#e8eef3"
+                fill="none"
+              />
+              <path
+                id="area"
+                d="M8 92L125 40L260 65L390 115V145H8Z"
+                fill="#edf6fa"
+              />
+              <path
+                id="line"
+                d="M8 92L125 40L260 65L390 115"
+                stroke="#2797c7"
+                fill="none"
+                stroke-width="3"
+                stroke-linejoin="round"
+              />
+              <circle id="dot" cx="390" cy="115" r="5" fill="#2797c7" />
+            </svg>
+            <div class="chart-labels">
+              <span><span data-i18n="copy30">First record</span></span
+              ><span><span data-i18n="copy31">Latest record</span></span>
+            </div>
+            <div class="switcher" aria-label="Choose an example product">
+              <button aria-pressed="true" data-item="0">
+                <span data-i18n="copy32">Yogurt</span></button
+              ><button aria-pressed="false" data-item="1">
+                <span data-i18n="copy33">Milk</span></button
+              ><button aria-pressed="false" data-item="2">
+                <span data-i18n="copy34">Coffee</span>
+              </button>
+            </div>
+            <p class="demo-note">
+              <span data-i18n="copy35"
+                >Interactive illustration, not a live price feed or app
+                screenshot.</span
+              >
+            </p>
+          </div>
+        </div>
+      </section>
+      <section class="section wrap">
+        <div class="section-head">
+          <div class="eyebrow">
+            <span data-i18n="copy36">For the things you actually buy</span>
+          </div>
+          <h2>
+            <span data-i18n="copy37"
+              >Everyday purchases.<br />Useful perspective.</span
+            >
+          </h2>
+          <p>
+            <span data-i18n="copy38"
+              >Your price history is personal: the products you choose, at the
+              places you shop.</span
+            >
+          </p>
+        </div>
+        <div class="use-row">
+          <span data-i18n="copy39">Groceries</span
+          ><span data-i18n="copy40">Household essentials</span
+          ><span data-i18n="copy41">Cosmetics</span
+          ><span data-i18n="copy42">Electronics</span
+          ><span data-i18n="copy43">Supplements</span>
+        </div>
+      </section>
+      <section class="section wrap" id="faq" style="padding-top: 0">
+        <div class="faq">
+          <h2><span data-i18n="copy44">A few things to know.</span></h2>
+          <details>
+            <summary>
+              <span data-i18n="copy45"
+                >How does PriceTracker get its prices?</span
+              >
+            </summary>
+            <p>
+              <span data-i18n="copy46"
+                >You record prices as you shop. PriceTracker builds a personal
+                history from your entries, so you can compare against what
+                you’ve seen and paid before.</span
+              >
+            </p>
+          </details>
+          <details>
+            <summary>
+              <span data-i18n="copy47">Can I look up an item by barcode?</span>
+            </summary>
+            <p>
+              <span data-i18n="copy48"
+                >Yes. Scan a product’s barcode to record it, then scan it again
+                later to check its price history.</span
+              >
+            </p>
+          </details>
+          <details>
+            <summary><span data-i18n="copy49">What can I track?</span></summary>
+            <p>
+              <span data-i18n="copy50"
+                >Everyday purchases such as groceries, household essentials,
+                electronics, cosmetics, and supplements.</span
+              >
+            </p>
+          </details>
+          <details>
+            <summary>
+              <span data-i18n="copy51">Where can I get the app?</span>
+            </summary>
+            <p>
+              <span data-i18n="copy52"
+                >Download PriceTracker using the App Store or Google Play
+                buttons below. Check your store listing for current device
+                compatibility and availability.</span
+              >
+            </p>
+          </details>
+        </div>
+      </section>
+      <div class="wrap closing-wrap">
+        <section class="closing" id="download">
+          <div class="eyebrow" style="color: #7ed2f0">
+            <span data-i18n="copy53">Make your next shop a smarter one</span>
+          </div>
+          <h2>
+            <span data-i18n="copy54"
+              >The next time you wonder,<br />you’ll have a history.</span
+            >
+          </h2>
+          <p>
+            <span data-i18n="copy55"
+              >Start with one product. Build from there.</span
+            >
+          </p>
+          <div class="stores" data-stores></div>
+        </section>
+      </div>
+    </main>
+    <footer>
+      <div class="wrap footer-content">
+        <div class="footer-main">
+          <span>© <span id="year"></span> PriceTracker · Hung Studio</span>
+          <div class="footer-links" role="navigation" aria-label="Footer">
+            <a href="https://apps.apple.com/app/id6758859107">App Store</a
+            ><a
+              href="https://play.google.com/store/apps/details?id=com.hung_studio.pricetracker"
+              >Google Play</a
+            ><a
+              href="https://wings-melt-dwg.craft.me/V7R4t1pXmlwpcx"
+              data-i18n="privacy"
+              >Privacy Policy</a
+            ><a
+              href="https://wings-melt-dwg.craft.me/t14CmVtsKUzNUo"
+              data-i18n="terms"
+              >Terms &amp; Conditions</a
+            >
+          </div>
+        </div>
+        <div class="preferences footer-preferences">
+          <label for="footer-locale"
+            ><span data-i18n="language">Language</span
+            ><span class="select-wrap"
+              ><select id="footer-locale" data-locale-select>
+                <option value="en" lang="en">English</option>
+                <option value="fr" lang="fr">Français</option>
+                <option value="tw" lang="zh-Hant">繁體中文</option>
+                <option value="ja" lang="ja">日本語</option>
+                <option value="cn" lang="zh-Hans">简体中文</option>
+              </select></span
+            ></label
+          ><label for="footer-theme"
+            ><span data-i18n="theme">Theme</span
+            ><span class="select-wrap"
+              ><select id="footer-theme" data-theme-select>
+                <option value="s" data-i18n="system">System theme</option>
+                <option value="l" data-i18n="light">Light</option>
+                <option value="d" data-i18n="dark">Dark</option>
+              </select></span
+            ></label
+          >
+        </div>
+      </div>
+    </footer>
+    <script src="locales.js" defer></script>
+    <script src="app.js" defer></script>
+  </body>
+</html>
